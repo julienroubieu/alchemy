@@ -58,6 +58,41 @@ describe.sequential("Container Resource", () => {
     }
   });
 
+  test("constraints are set on ContainerApplication", async (scope) => {
+    const containerName = `container-test-constraints${BRANCH_PREFIX}`;
+    try {
+      await Worker(`container-test-worker-constraints${BRANCH_PREFIX}`, {
+        name: `container-test-worker-constraints${BRANCH_PREFIX}`,
+        adopt: true,
+        entrypoint: path.join(import.meta.dirname, "container-handler.ts"),
+        compatibilityFlags: ["nodejs_compat"],
+        compatibilityDate: "2025-06-24",
+        format: "esm",
+        bindings: {
+          MY_CONTAINER: await Container(containerName, {
+            className: "MyContainer",
+            name: containerName,
+            tag: "latest",
+            build: {
+              context: path.join(import.meta.dirname, "container"),
+            },
+            maxInstances: 1,
+            adopt: true,
+            constraints: {
+              regions: ["ENAM", "WNAM"],
+            },
+          }),
+        },
+      });
+
+      const app = await getContainerApplicationByName(api, containerName);
+      expect(app?.constraints?.regions).toEqual(["ENAM", "WNAM"]);
+      expect(app?.constraints?.tier).toBe(1);
+    } finally {
+      await destroy(scope);
+    }
+  });
+
   test("max_instances is set on ContainerApplication", async (scope) => {
     try {
       const containerName = `container-test-max-instances${BRANCH_PREFIX}`;

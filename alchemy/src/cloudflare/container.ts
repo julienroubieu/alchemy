@@ -95,6 +95,15 @@ interface ContainerPropsBase extends Partial<CloudflareApiOptions> {
    * Defines how updates are deployed across instances.
    */
   rollout?: ContainerApplicationRollout;
+
+  /**
+   * Placement constraints that control which regions, cities, or jurisdictions
+   * the container is allowed to run in.
+   * Affects the geographic distribution and compliance of the deployment.
+   *
+   * @see https://developers.cloudflare.com/containers/platform-details/placement/
+   */
+  constraints?: Constraints;
 }
 
 /**
@@ -270,6 +279,12 @@ export type Container<T = any> = {
   rollout?: ContainerApplicationRollout;
 
   /**
+   * Placement constraints that control which regions, cities, or jurisdictions
+   * the container is allowed to run in.
+   */
+  constraints?: Constraints;
+
+  /**
    * @internal
    * Phantom type parameter for additional type safety
    */
@@ -351,6 +366,7 @@ export async function Container<T>(
     dev: props.dev,
     adopt: props.adopt,
     rollout: props.rollout,
+    constraints: props.constraints,
   };
 
   const isDev = scope.local && !props.dev?.remote;
@@ -625,6 +641,15 @@ export interface ContainerApplicationProps extends CloudflareApiOptions {
   rollout?: ContainerApplicationRollout;
 
   /**
+   * Placement constraints that control which regions, cities, or jurisdictions
+   * the container is allowed to run in.
+   * Affects the geographic distribution and compliance of the deployment.
+   *
+   * @see https://developers.cloudflare.com/containers/platform-details/placement/
+   */
+  constraints?: Constraints;
+
+  /**
    * Whether to adopt an existing container application with the same name.
    *
    * If `true`, the resource will attempt to adopt an existing container application
@@ -669,6 +694,58 @@ export type SchedulingPolicy =
   | "fill_metals"
   | "default"
   | (string & {});
+
+/**
+ * Cloudflare geographic region codes for container placement.
+ *
+ * @see https://developers.cloudflare.com/containers/platform-details/placement/
+ */
+export type Region =
+  | "AFR"
+  | "APAC"
+  | "EEUR"
+  | "ENAM"
+  | "WNAM"
+  | "ME"
+  | "OC"
+  | "SAM"
+  | "WEUR"
+  | (string & {});
+
+/**
+ * Compliance jurisdiction for container placement.
+ * - `eu`: Restrict to EU regions only
+ * - `fedramp`: Restrict to FedRAMP-compliant infrastructure
+ */
+export type Jurisdiction = "eu" | "fedramp" | (string & {});
+
+/**
+ * Placement constraints for controlling where Cloudflare Containers run.
+ *
+ * @see https://developers.cloudflare.com/containers/platform-details/placement/
+ */
+export interface Constraints {
+  /**
+   * Restrict placement to specific geographic regions (e.g. `["ENAM", "WNAM"]`).
+   * See {@link Region} for valid values.
+   */
+  regions?: Region[];
+  /**
+   * Restrict placement to specific cities (advanced use).
+   * City codes are an open-ended set; refer to Cloudflare documentation.
+   */
+  cities?: string[];
+  /**
+   * Compliance jurisdiction restricting which infrastructure is eligible.
+   * `"eu"` implies EU regions only; `"fedramp"` requires FedRAMP infrastructure.
+   */
+  jurisdiction?: Jurisdiction;
+  /**
+   * Infrastructure tier.
+   * @default 1
+   */
+  tier?: number;
+}
 
 /**
  * A ContainerApplication resource representing a managed container deployment.
@@ -808,6 +885,13 @@ export const ContainerApplication = Resource(
         },
       },
     };
+    const constraints = {
+      tier: props.constraints?.tier ?? 1,
+      regions: props.constraints?.regions,
+      cities: props.constraints?.cities,
+      jurisdiction: props.constraints?.jurisdiction,
+    };
+
     if (this.phase === "update" && this.output?.id) {
       const application = await updateContainerApplication(
         api,
@@ -816,6 +900,7 @@ export const ContainerApplication = Resource(
           instances: props.instances ?? 1,
           max_instances: props.maxInstances ?? 10,
           scheduling_policy: props.schedulingPolicy ?? "default",
+          constraints,
           configuration,
         },
       );
@@ -852,9 +937,7 @@ export const ContainerApplication = Resource(
                 namespace_id: props.durableObjects.namespaceId,
               }
             : undefined,
-          constraints: {
-            tier: 1,
-          },
+          constraints,
           configuration: {
             image: imageReference,
             instance_type: props.instanceType ?? "dev",
@@ -894,6 +977,7 @@ export const ContainerApplication = Resource(
                 props.maxInstances ?? existingApplication.max_instances,
               scheduling_policy:
                 props.schedulingPolicy ?? existingApplication.scheduling_policy,
+              constraints,
               configuration,
             },
           );
@@ -951,7 +1035,12 @@ export interface ContainerApplicationData {
   constraints: {
     /** Infrastructure tier level (higher numbers indicate more resources) */
     tier: number;
-
+    /** Geographic regions the application is restricted to */
+    regions?: Region[];
+    /** City-level placement restrictions */
+    cities?: string[];
+    /** Compliance jurisdiction */
+    jurisdiction?: Jurisdiction;
     /** Additional constraint properties that may be added by Cloudflare */
     [key: string]: any;
   };
@@ -1099,7 +1188,12 @@ export interface CreateContainerApplicationBody {
   };
   instances?: number;
   scheduling_policy?: string;
-  constraints?: { tier: number };
+  constraints?: {
+    tier?: number;
+    regions?: Region[];
+    cities?: string[];
+    jurisdiction?: Jurisdiction;
+  };
   affinities?: {
     colocation?: "datacenter";
   };
@@ -1174,30 +1268,6 @@ export async function createContainerApplication(
     `Failed to create container application: ${result.errors?.map((e) => `[${e.code}] ${e.message}`).join(", ") ?? "Unknown error"}`,
   );
 }
-type Region =
-  | "AFR"
-  | "APAC"
-  | "EEUR"
-  | "ENAM"
-  | "WNAM"
-  | "ME"
-  | "OC"
-  | "SAM"
-  | "WEUR"
-  | (string & {});
-
-type City =
-  | "AFR"
-  | "APAC"
-  | "EEUR"
-  | "ENAM"
-  | "WNAM"
-  | "ME"
-  | "OC"
-  | "SAM"
-  | "WEUR"
-  | (string & {});
-
 export type UpdateApplicationRequestBody = {
   /**
    * Number of deployments to maintain within this applicaiton. This can be used to scale the appliation up/down.
@@ -1209,10 +1279,10 @@ export type UpdateApplicationRequestBody = {
   };
   scheduling_policy?: SchedulingPolicy;
   constraints?: {
-    region?: Region;
     tier?: number;
-    regions?: Array<Region>;
-    cities?: Array<City>;
+    regions?: Region[];
+    cities?: string[];
+    jurisdiction?: Jurisdiction;
   };
   /**
    * The deployment configuration of all deployments created by this application.
