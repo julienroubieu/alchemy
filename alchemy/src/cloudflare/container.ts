@@ -171,6 +171,17 @@ interface ContainerPropsWithBuild extends ContainerPropsBase {
  *     dockerfile: "Dockerfile"
  *   }
  * });
+ *
+ * @example
+ * // Restricting placement to specific regions and a compliance jurisdiction
+ * const container = await Container("my-container", {
+ *   className: "MyContainer",
+ *   image: "nginx:alpine",
+ *   constraints: {
+ *     regions: ["ENAM", "WNAM"],
+ *     jurisdiction: "fedramp"
+ *   }
+ * });
  */
 export type ContainerProps = ContainerPropsWithImage | ContainerPropsWithBuild;
 
