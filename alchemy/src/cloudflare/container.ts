@@ -97,9 +97,8 @@ interface ContainerPropsBase extends Partial<CloudflareApiOptions> {
   rollout?: ContainerApplicationRollout;
 
   /**
-   * Placement constraints that control which regions, cities, or jurisdictions
+   * Placement constraints that control which regions or jurisdictions
    * the container is allowed to run in.
-   * Affects the geographic distribution and compliance of the deployment.
    *
    * @see https://developers.cloudflare.com/containers/platform-details/placement/
    */
@@ -279,7 +278,7 @@ export type Container<T = any> = {
   rollout?: ContainerApplicationRollout;
 
   /**
-   * Placement constraints that control which regions, cities, or jurisdictions
+   * Placement constraints that control which regions or jurisdictions
    * the container is allowed to run in.
    */
   constraints?: Constraints;
@@ -641,9 +640,8 @@ export interface ContainerApplicationProps extends CloudflareApiOptions {
   rollout?: ContainerApplicationRollout;
 
   /**
-   * Placement constraints that control which regions, cities, or jurisdictions
+   * Placement constraints that control which regions or jurisdictions
    * the container is allowed to run in.
-   * Affects the geographic distribution and compliance of the deployment.
    *
    * @see https://developers.cloudflare.com/containers/platform-details/placement/
    */
@@ -714,8 +712,6 @@ export type Region =
 
 /**
  * Compliance jurisdiction for container placement.
- * - `eu`: Restrict to EU regions only
- * - `fedramp`: Restrict to FedRAMP-compliant infrastructure
  */
 export type Jurisdiction = "eu" | "fedramp" | (string & {});
 
@@ -731,20 +727,9 @@ export interface Constraints {
    */
   regions?: Region[];
   /**
-   * Restrict placement to specific cities (advanced use).
-   * City codes are an open-ended set; refer to Cloudflare documentation.
-   */
-  cities?: string[];
-  /**
-   * Compliance jurisdiction restricting which infrastructure is eligible.
-   * `"eu"` implies EU regions only; `"fedramp"` requires FedRAMP infrastructure.
+   * Compliance jurisdiction restricting which regions are eligible.
    */
   jurisdiction?: Jurisdiction;
-  /**
-   * Infrastructure tier.
-   * @default 1
-   */
-  tier?: number;
 }
 
 /**
@@ -886,9 +871,7 @@ export const ContainerApplication = Resource(
       },
     };
     const constraints = {
-      tier: props.constraints?.tier ?? 1,
       regions: props.constraints?.regions,
-      cities: props.constraints?.cities,
       jurisdiction: props.constraints?.jurisdiction,
     };
 
@@ -1037,8 +1020,6 @@ export interface ContainerApplicationData {
     tier: number;
     /** Geographic regions the application is restricted to */
     regions?: Region[];
-    /** City-level placement restrictions */
-    cities?: string[];
     /** Compliance jurisdiction */
     jurisdiction?: Jurisdiction;
     /** Additional constraint properties that may be added by Cloudflare */
@@ -1189,9 +1170,7 @@ export interface CreateContainerApplicationBody {
   instances?: number;
   scheduling_policy?: string;
   constraints?: {
-    tier?: number;
     regions?: Region[];
-    cities?: string[];
     jurisdiction?: Jurisdiction;
   };
   affinities?: {
@@ -1279,9 +1258,7 @@ export type UpdateApplicationRequestBody = {
   };
   scheduling_policy?: SchedulingPolicy;
   constraints?: {
-    tier?: number;
     regions?: Region[];
-    cities?: string[];
     jurisdiction?: Jurisdiction;
   };
   /**

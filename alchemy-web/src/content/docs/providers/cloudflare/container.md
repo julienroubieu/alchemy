@@ -185,7 +185,7 @@ This warning can be safely ignored - the binding still works correctly and this 
 
 ## Placement Constraints
 
-You can restrict where your containers run using the `constraints` option.
+You can restrict where your containers run using the `constraints` option:
 
 ```ts
 const container = await Container<MyContainer>("my-container", {
@@ -196,6 +196,8 @@ const container = await Container<MyContainer>("my-container", {
   },
 });
 ```
+
+See the [Cloudflare placement documentation](https://developers.cloudflare.com/containers/platform-details/placement/) for full details.
 
 ## Rollout Configuration
 

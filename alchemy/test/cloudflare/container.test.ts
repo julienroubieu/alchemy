@@ -5,8 +5,8 @@ import {
   Container,
   ContainerApplication,
   createCloudflareApi,
-  getContainerApplicationByName,
   getCloudflareContainerRegistry,
+  getContainerApplicationByName,
   resolveImageName,
 } from "../../src/cloudflare/index.ts";
 import { Worker } from "../../src/cloudflare/worker.ts";
@@ -87,7 +87,7 @@ describe.sequential("Container Resource", () => {
 
       const app = await getContainerApplicationByName(api, containerName);
       expect(app?.constraints?.regions).toEqual(["ENAM", "WNAM"]);
-      expect(app?.constraints?.tier).toBe(1);
+      expect(typeof app?.constraints?.tier).toBe("number");
     } finally {
       await destroy(scope);
     }
