@@ -881,10 +881,12 @@ export const ContainerApplication = Resource(
         },
       },
     };
-    const constraints = {
-      regions: props.constraints?.regions,
-      jurisdiction: props.constraints?.jurisdiction,
-    };
+    const constraints = props.constraints
+      ? {
+          regions: props.constraints.regions,
+          jurisdiction: props.constraints.jurisdiction,
+        }
+      : undefined;
 
     if (this.phase === "update" && this.output?.id) {
       const application = await updateContainerApplication(
