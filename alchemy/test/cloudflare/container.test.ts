@@ -87,7 +87,6 @@ describe.sequential("Container Resource", () => {
 
       const app = await getContainerApplicationByName(api, containerName);
       expect(app?.constraints?.regions).toEqual(["ENAM", "WNAM"]);
-      expect(typeof app?.constraints?.tier).toBe("number");
     } finally {
       await destroy(scope);
     }

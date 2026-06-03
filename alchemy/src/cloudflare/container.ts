@@ -1027,8 +1027,13 @@ export interface ContainerApplicationData {
 
   /** Resource and placement constraints for the application */
   constraints: {
-    /** Infrastructure tier level (higher numbers indicate more resources) */
-    tier: number;
+    /**
+     * Infrastructure tier level assigned by Cloudflare (higher means more resources).
+     * @deprecated The API is migrating to `tiers`; may be absent on newer applications.
+     */
+    tier?: number;
+    /** Infrastructure tiers assigned by Cloudflare (replacement for `tier`) */
+    tiers?: number[];
     /** Geographic regions the application is restricted to */
     regions?: Region[];
     /** Compliance jurisdiction */
@@ -1181,7 +1186,18 @@ export interface CreateContainerApplicationBody {
   instances?: number;
   scheduling_policy?: string;
   constraints?: {
+    /** Geographic regions the application is restricted to */
     regions?: Region[];
+    /** City airport codes the application is restricted to (e.g. "MAD", "SFO") */
+    cities?: string[];
+    /**
+     * Infrastructure tier the application is restricted to.
+     * @deprecated The API is migrating to `tiers`; prefer `tiers` instead.
+     */
+    tier?: number;
+    /** Infrastructure tiers the application is restricted to */
+    tiers?: number[];
+    /** Compliance jurisdiction */
     jurisdiction?: Jurisdiction;
   };
   affinities?: {
@@ -1269,7 +1285,18 @@ export type UpdateApplicationRequestBody = {
   };
   scheduling_policy?: SchedulingPolicy;
   constraints?: {
+    /** Geographic regions the application is restricted to */
     regions?: Region[];
+    /** City airport codes the application is restricted to (e.g. "MAD", "SFO") */
+    cities?: string[];
+    /**
+     * Infrastructure tier the application is restricted to.
+     * @deprecated The API is migrating to `tiers`; prefer `tiers` instead.
+     */
+    tier?: number;
+    /** Infrastructure tiers the application is restricted to */
+    tiers?: number[];
+    /** Compliance jurisdiction */
     jurisdiction?: Jurisdiction;
   };
   /**
